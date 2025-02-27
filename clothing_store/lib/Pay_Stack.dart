@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_paystack/flutter_paystack.dart';
+import 'package:pay_with_paystack/pay_with_paystack.dart';
 import 'package:provider/provider.dart';
 import 'package:toggle_switch/toggle_switch.dart';
 import 'package:webmax_store/Colors.dart';
@@ -23,7 +23,8 @@ class GooglePay extends StatefulWidget {
 
 class _GooglePayState extends State<GooglePay> {
   final String publicKey = 'pk_test_8a6aff050c0c0adc6768c83b3675f9f0a6752ebf';
-  final PaystackPlugin plugin = PaystackPlugin();
+  final String SecretKey = 'sk_test_f415bc173de81e56f9ac898f02c6478ff94a286f';
+
   String? _email;
   String message = '';
   late int deliveryFree = 0;
@@ -34,7 +35,6 @@ class _GooglePayState extends State<GooglePay> {
   void initState() {
     super.initState();
     late int deliveryFree = 0;
-    plugin.initialize(publicKey: publicKey);
   }
 
   @override
@@ -127,34 +127,32 @@ class _GooglePayState extends State<GooglePay> {
               onTap: () async {
                 if (_formKey.currentState!.validate()) {
                   int price = (addedDeliveryFee_final_price * 100).toInt();
-                  Charge charge = Charge()
-                    ..amount = price
-                    ..reference =
-                        'ref_${DateTime.now().millisecondsSinceEpoch} \n ' +
-                            widget.itemNamesWithQuantities.toString() +
-                            "Delevery Fee is: " +
-                            deliveryFree.toString()
-                    ..email = _email
-                    ..currency = 'ZAR';
 
-                  CheckoutResponse response = await plugin.checkout(
-                    context,
-                    method: CheckoutMethod.card,
-                    charge: charge,
-                  );
+                  final uniqueTransRef = PayWithPayStack().generateUuidV4();
 
-                  if (response.status == true) {
-                    message = 'Payment was successful';
-                    SuccessscaffMessengerPayment(context, message, 5);
+                  PayWithPayStack().now(
+                      context: context,
+                      secretKey: SecretKey,
+                      customerEmail: _email!,
+                      reference: uniqueTransRef,
+                      currency: "ZAR",
+                      amount: price.toDouble(),
+                      callbackUrl: "https://google.com",
+                      transactionCompleted: (paymentData) {
+                        SuccessscaffMessengerPayment(context, message, 5);
 
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => BottomNavBar()),
-                      ModalRoute.withName('/'),
-                    );
-                  } else {
-                    ErrorffMessenger(context, response.message);
-                  }
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => BottomNavBar()),
+                          ModalRoute.withName('/'),
+                        );
+                        debugPrint(paymentData.toString());
+                      },
+                      transactionNotCompleted: (reason) {
+                        debugPrint("==> Transaction failed reason $reason");
+                        ErrorffMessenger(context, reason);
+                      });
                 }
               },
               child: Container(
