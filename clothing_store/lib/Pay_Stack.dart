@@ -126,7 +126,7 @@ class _GooglePayState extends State<GooglePay> {
             InkWell(
               onTap: () async {
                 if (_formKey.currentState!.validate()) {
-                  int price = (addedDeliveryFee_final_price * 100).toInt();
+                  int price = (addedDeliveryFee_final_price).toInt();
 
                   final uniqueTransRef = PayWithPayStack().generateUuidV4();
 
@@ -152,6 +152,12 @@ class _GooglePayState extends State<GooglePay> {
                       transactionNotCompleted: (reason) {
                         debugPrint("==> Transaction failed reason $reason");
                         ErrorffMessenger(context, reason);
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => BottomNavBar()),
+                          ModalRoute.withName('/'),
+                        );
                       });
                 }
               },
